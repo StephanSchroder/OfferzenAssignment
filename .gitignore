@@ -1,0 +1,15 @@
+# Build output and IDE files
+bin/
+obj/
+.vs/
+*.user
+
+# Frontend
+node_modules/
+dist/
+.angular/
+
+# Local SQLite database
+*.db
+*.db-shm
+*.db-wal

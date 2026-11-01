@@ -1,0 +1,264 @@
+<section class="table-panel">
+  <header class="toolbar">
+    <div class="toolbar__heading">
+      <h1 class="toolbar__title">{{ heading() }}</h1>
+      <span class="toolbar__count" aria-live="polite">{{ total() }} {{ total() === 1 ? itemName() : itemName() + 's' }}</span>
+    </div>
+
+    <div class="toolbar__extra">
+      <ng-content select="[toolbar]" />
+    </div>
+
+    <div class="toolbar__actions">
+      @if (hasFilters()) {
+        <button type="button" class="button button--ghost" (click)="clearFilters()">Clear filters</button>
+      }
+      <button
+        type="button"
+        class="button button--secondary"
+        [disabled]="!selected()"
+        [attr.title]="selected() ? null : 'Select a row to update it'"
+        (click)="onUpdateClick()"
+      >
+        Update {{ itemName() }}
+      </button>
+      <button type="button" class="button button--primary" (click)="add.emit()">Add {{ itemName() }}</button>
+    </div>
+  </header>
+
+  @if (error(); as message) {
+    <p class="banner banner--error" role="alert">{{ message }}</p>
+  }
+
+  <div class="table-scroll" [class.is-loading]="loading()">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th class="col-select" scope="col"><span class="visually-hidden">Selected</span></th>
+          @for (column of columns(); track column.field) {
+            <th
+              scope="col"
+              [style.width]="column.width ?? null"
+              [class.align-end]="isEnd(column)"
+              [attr.aria-sort]="ariaSort(column)"
+            >
+              @if (column.sortable !== false) {
+                <button type="button" class="sort-button" (click)="toggleSort(column)">
+                  {{ column.header }}
+                  <span class="sort-indicator" [attr.data-dir]="ariaSort(column)" aria-hidden="true"></span>
+                </button>
+              } @else {
+                {{ column.header }}
+              }
+            </th>
+          }
+          <th class="col-actions" scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+        <tr class="filter-row">
+          <td></td>
+          @for (column of columns(); track column.field) {
+            <td>
+              @if (column.filterable !== false) {
+                @let filter = filterOf(column);
+                <div class="filter" [class.is-active]="filter.value !== ''">
+                  @switch (column.type ?? 'text') {
+                    @case ('enum') {
+                      <select
+                        class="filter__select"
+                        [value]="filter.value"
+                        (change)="setFilterValue(column, $any($event.target).value)"
+                        [attr.aria-label]="'Filter ' + column.header"
+                      >
+                        <option value="">All</option>
+                        @for (option of column.options ?? []; track option) {
+                          <option [value]="option">{{ option }}</option>
+                        }
+                      </select>
+                    }
+                    @case ('boolean') {
+                      <select
+                        class="filter__select"
+                        [value]="filter.value"
+                        (change)="setFilterValue(column, $any($event.target).value)"
+                        [attr.aria-label]="'Filter ' + column.header"
+                      >
+                        <option value="">All</option>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                      </select>
+                    }
+                    @case ('date') {
+                      <select
+                        class="filter__operator"
+                        [value]="filter.operator"
+                        (change)="setFilterOperator(column, $any($event.target).value)"
+                        [attr.aria-label]="column.header + ' comparison'"
+                      >
+                        @for (op of dateOperators; track op.value) {
+                          <option [value]="op.value">{{ op.label }}</option>
+                        }
+                      </select>
+                      <input
+                        type="date"
+                        class="filter__input"
+                        [value]="filter.value"
+                        (input)="setFilterValue(column, $any($event.target).value)"
+                        [attr.aria-label]="'Filter ' + column.header"
+                      />
+                    }
+                    @case ('number') {
+                      <ng-container *ngTemplateOutlet="numberFilter; context: { $implicit: column, filter }" />
+                    }
+                    @case ('currency') {
+                      <ng-container *ngTemplateOutlet="numberFilter; context: { $implicit: column, filter }" />
+                    }
+                    @default {
+                      <svg class="filter__icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                        <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.6" />
+                        <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                      </svg>
+                      <input
+                        type="text"
+                        class="filter__input"
+                        placeholder="Filter"
+                        autocomplete="off"
+                        [value]="filter.value"
+                        (input)="setFilterValue(column, $any($event.target).value)"
+                        [attr.aria-label]="'Filter ' + column.header"
+                      />
+                    }
+                  }
+                  @if (filter.value !== '' && column.type !== 'enum' && column.type !== 'boolean') {
+                    <button
+                      type="button"
+                      class="filter__clear"
+                      (click)="setFilterValue(column, '')"
+                      [attr.aria-label]="'Clear ' + column.header + ' filter'"
+                    >
+                      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+                        <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  }
+                </div>
+              }
+            </td>
+          }
+          <td></td>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (row of rows(); track row.id) {
+          <tr
+            class="data-row"
+            [class.is-selected]="selected()?.id === row.id"
+            (click)="onRowClick(row)"
+          >
+            <td class="col-select" (click)="$event.stopPropagation()">
+              <input
+                type="radio"
+                class="row-radio"
+                [name]="entitySet() + '-selection'"
+                [checked]="selected()?.id === row.id"
+                (click)="select(row)"
+                [attr.aria-label]="'Select ' + itemName() + ' ' + row.id"
+              />
+            </td>
+            @for (column of columns(); track column.field) {
+              @let cell = value(row, column);
+              <td [class.align-end]="isEnd(column)" [class.numeric]="column.type === 'number' || column.type === 'currency'">
+                @switch (column.type ?? 'text') {
+                  @case ('currency') { {{ $any(cell) | currency: currencyCode }} }
+                  @case ('date') { {{ $any(cell) | date: 'd MMM y, HH:mm' }} }
+                  @case ('enum') { <span class="pill" [attr.data-value]="cell">{{ cell }}</span> }
+                  @case ('boolean') { {{ cell ? 'Yes' : 'No' }} }
+                  @default { {{ cell ?? '—' }} }
+                }
+              </td>
+            }
+            <td class="col-actions" (click)="$event.stopPropagation()">
+              @if (canDelete()(row)) {
+                <button type="button" class="button button--danger-ghost button--small" (click)="pendingDelete.set(row)">
+                  {{ deleteLabel() }}
+                </button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td class="empty" [attr.colspan]="columns().length + 2">
+              @if (loading()) {
+                Loading {{ itemName() }}s…
+              } @else if (hasFilters()) {
+                No {{ itemName() }}s match these filters.
+                <button type="button" class="link-button" (click)="clearFilters()">Clear filters</button>
+              } @else if (!error()) {
+                No {{ itemName() }}s yet.
+                <button type="button" class="link-button" (click)="add.emit()">Add the first one</button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="pager">
+    <label class="pager__size">
+      Rows per page
+      <select class="control control--compact" [value]="pageSize()" (change)="setPageSize($any($event.target).value)">
+        @for (size of pageSizes; track size) {
+          <option [value]="size">{{ size }}</option>
+        }
+      </select>
+    </label>
+    <span class="pager__range">{{ rangeStart() }}–{{ rangeEnd() }} of {{ total() }}</span>
+    <div class="pager__buttons">
+      <button type="button" class="button button--ghost button--small" [disabled]="pageIndex() === 0" (click)="goToPage(pageIndex() - 1)">
+        Previous
+      </button>
+      <button
+        type="button"
+        class="button button--ghost button--small"
+        [disabled]="pageIndex() >= pageCount() - 1"
+        (click)="goToPage(pageIndex() + 1)"
+      >
+        Next
+      </button>
+    </div>
+  </footer>
+</section>
+
+<ng-template #numberFilter let-column let-filter="filter">
+  <select
+    class="filter__operator"
+    [value]="filter.operator"
+    (change)="setFilterOperator(column, $any($event.target).value)"
+    [attr.aria-label]="column.header + ' comparison'"
+  >
+    @for (op of numberOperators; track op.value) {
+      <option [value]="op.value">{{ op.label }}</option>
+    }
+  </select>
+  <input
+    type="text"
+    inputmode="decimal"
+    class="filter__input filter__input--number"
+    placeholder="Value"
+    autocomplete="off"
+    [value]="filter.value"
+    (input)="setFilterValue(column, $any($event.target).value)"
+    [attr.aria-label]="'Filter ' + column.header"
+  />
+</ng-template>
+
+<app-modal [open]="!!pendingDelete()" [heading]="deleteLabel() + ' ' + itemName() + '?'" (closed)="pendingDelete.set(null)">
+  @if (pendingDelete(); as row) {
+    <p class="confirm-text">{{ deleteConfirmation()(row) }}</p>
+  }
+  <div modal-footer>
+    <button type="button" class="button button--ghost" (click)="pendingDelete.set(null)">Cancel</button>
+    <button type="button" class="button button--danger" (click)="confirmDelete()">{{ deleteLabel() }} {{ itemName() }}</button>
+  </div>
+</app-modal>

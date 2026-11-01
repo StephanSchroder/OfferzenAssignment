@@ -1,0 +1,140 @@
+<app-modal
+  size="wide"
+  [open]="open()"
+  [heading]="orderId() ? 'Update purchase order ' + (order()?.clientReference ?? '') : 'Add purchase order'"
+  (closed)="closed.emit()"
+>
+  @if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else {
+    <form id="purchase-order-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+      @if (error(); as message) {
+        <p class="form-error" role="alert">{{ message }}</p>
+      }
+
+      <div class="header-fields">
+        <label class="field">
+          <span class="field__label">Customer</span>
+          <select class="control" formControlName="customerId">
+            <option [ngValue]="null" disabled>Choose a customer</option>
+            @for (customer of customers(); track customer.id) {
+              <option [ngValue]="customer.id">{{ customer.name }}</option>
+            }
+          </select>
+          @if (form.controls.customerId.touched && form.controls.customerId.invalid) {
+            <span class="field__error">Choose a customer.</span>
+          }
+        </label>
+
+        <label class="field">
+          <span class="field__label">Client reference</span>
+          <input class="control" formControlName="clientReference" placeholder="The customer's own order number" />
+          @if (form.controls.clientReference.touched && form.controls.clientReference.invalid) {
+            <span class="field__error">Enter a client reference.</span>
+          } @else {
+            <span class="field__hint">Must be unique across all purchase orders.</span>
+          }
+        </label>
+
+        @if (orderId()) {
+          <label class="field">
+            <span class="field__label">Status</span>
+            <select
+              class="control"
+              formControlName="status"
+              [class.control--invalid]="statusProblem() || serverStatusError()"
+              aria-describedby="status-message"
+              (change)="serverStatusError.set(null)"
+            >
+              @for (status of statuses; track status) {
+                <option [ngValue]="status">{{ status }}{{ status === originalStatus() ? ' (current)' : '' }}</option>
+              }
+            </select>
+            @if (statusProblem() ?? serverStatusError(); as message) {
+              <span id="status-message" class="field__error" role="alert">{{ message }}</span>
+            } @else if (statusHint(); as hint) {
+              <span id="status-message" class="field__hint">{{ hint }}</span>
+            }
+          </label>
+        }
+      </div>
+
+      <h3 class="section-title">Items</h3>
+      <table class="lines" formArrayName="items">
+        <thead>
+          <tr>
+            <th scope="col">Product</th>
+            <th scope="col" class="num">Quantity</th>
+            <th scope="col" class="num">Unit price</th>
+            <th scope="col" class="num">Line total</th>
+            <th scope="col"><span class="visually-hidden">Remove</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (line of lines.controls; track line; let i = $index) {
+            <tr [formGroupName]="i">
+              <td>
+                <select class="control" formControlName="productId" [attr.aria-label]="'Product for item ' + (i + 1)">
+                  <option [ngValue]="null" disabled>Choose a product</option>
+                  @for (product of productOptions(line); track product.id) {
+                    <option [ngValue]="product.id">{{ product.name }}</option>
+                  }
+                </select>
+              </td>
+              <td class="num">
+                <input
+                  class="control quantity"
+                  type="number"
+                  min="1"
+                  step="1"
+                  formControlName="quantity"
+                  [attr.aria-label]="'Quantity for item ' + (i + 1)"
+                />
+              </td>
+              <td class="num">
+                {{ linePrice(line) | currency: currency }}
+                @if (isCapturedPrice(line)) {
+                  <span class="price-note">as ordered</span>
+                }
+              </td>
+              <td class="num strong">{{ linePrice(line) * (line.controls.quantity.value || 0) | currency: currency }}</td>
+              <td class="remove">
+                <button
+                  type="button"
+                  class="icon-button"
+                  (click)="removeLine(i)"
+                  [attr.aria-label]="'Remove item ' + (i + 1)"
+                  [disabled]="lines.length === 1"
+                >
+                  <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+                    <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">
+              <button type="button" class="button button--ghost button--small" (click)="addLine()">Add item</button>
+            </td>
+            <td class="num total">{{ estimatedTotal() | currency: currency }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+      <p class="field__hint total-hint">
+        Estimated total. The backend calculates the final total when you save. Items already on the order keep the
+        price they were ordered at.
+      </p>
+    </form>
+  }
+
+  <div modal-footer>
+    <button type="button" class="button button--ghost" (click)="closed.emit()">Cancel</button>
+    <button type="submit" form="purchase-order-form" class="button button--primary" [disabled]="saving() || loading()">
+      {{ saving() ? 'Saving…' : orderId() ? 'Save changes' : 'Add purchase order' }}
+    </button>
+  </div>
+</app-modal>

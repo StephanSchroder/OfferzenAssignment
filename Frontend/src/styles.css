@@ -1,0 +1,164 @@
+/* Design tokens */
+:root {
+  --canvas: #eef1f4;
+  --surface: #ffffff;
+  --surface-sunken: #f6f8fa;
+  --ink: #17222d;
+  --muted: #5b6875;
+  --line: #d9dfe5;
+  --line-soft: #e8ecf0;
+  --primary: #1d4f73;
+  --primary-strong: #143a56;
+  --primary-soft: #e3edf5;
+  --row-hover: #f5f8fb;
+  --selected: #e8f0f7;
+  --focus: #3b82c4;
+  --danger: #a63a2b;
+  --danger-soft: #f8e9e6;
+
+  --status-pending-ink: #865c00;
+  --status-pending-bg: #fbf1d6;
+  --status-confirmed-ink: #1d4f73;
+  --status-confirmed-bg: #e1ecf5;
+  --status-fulfilled-ink: #2e6b3f;
+  --status-fulfilled-bg: #e0f0e4;
+  --status-cancelled-ink: #6f5a58;
+  --status-cancelled-bg: #eee7e6;
+
+  --font: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; }
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { line-height: 1.2; }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Buttons */
+.button {
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 120ms, border-color 120ms, color 120ms;
+}
+.button:disabled { cursor: not-allowed; opacity: 0.45; }
+.button--small { min-height: 30px; padding: 0 10px; font-size: 0.8125rem; }
+.button--primary { background: var(--primary); color: #fff; }
+.button--primary:hover:not(:disabled) { background: var(--primary-strong); }
+.button--secondary { background: var(--surface); color: var(--primary); border-color: var(--primary); }
+.button--secondary:hover:not(:disabled) { background: var(--primary-soft); }
+.button--ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.button--ghost:hover:not(:disabled) { background: var(--surface-sunken); }
+.button--danger { background: var(--danger); color: #fff; }
+.button--danger:hover:not(:disabled) { background: #8a2f22; }
+.button--danger-ghost { background: transparent; color: var(--danger); border-color: transparent; }
+.button--danger-ghost:hover:not(:disabled) { background: var(--danger-soft); }
+
+.icon-button {
+  all: unset;
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  color: var(--muted);
+}
+.icon-button:hover { background: var(--surface-sunken); color: var(--ink); }
+.icon-button:focus-visible { outline: 2px solid var(--focus); }
+
+.link-button {
+  all: unset;
+  cursor: pointer;
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.link-button:focus-visible { outline: 2px solid var(--focus); }
+
+/* Form controls */
+.control {
+  font: inherit;
+  font-size: 0.9375rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  height: 38px;
+  padding: 0 10px;
+  width: 100%;
+}
+.control:hover { border-color: #b9c3cd; }
+.control:focus { outline: 2px solid var(--focus); outline-offset: -1px; border-color: var(--focus); }
+.control.ng-invalid.ng-touched,
+.control.control--invalid { border-color: var(--danger); }
+.control.control--invalid:focus { outline-color: var(--danger); }
+textarea.control { height: auto; padding: 8px 10px; min-height: 80px; resize: vertical; }
+.control--compact { height: 32px; font-size: 0.8125rem; padding: 0 8px; }
+
+/* Buttons projected into a modal footer */
+[modal-footer] { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+
+.field { display: grid; gap: 6px; margin-bottom: 16px; align-content: start; }
+.field:last-child { margin-bottom: 0; }
+.field__label { font-size: 0.875rem; font-weight: 600; }
+.field__hint { font-size: 0.8125rem; color: var(--muted); }
+.field__error { font-size: 0.8125rem; color: var(--danger); }
+
+.form-error {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
+/* Status pills */
+.pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: var(--surface-sunken);
+  color: var(--muted);
+}
+.pill[data-value='Pending'] { background: var(--status-pending-bg); color: var(--status-pending-ink); }
+.pill[data-value='Confirmed'] { background: var(--status-confirmed-bg); color: var(--status-confirmed-ink); }
+.pill[data-value='Fulfilled'] { background: var(--status-fulfilled-bg); color: var(--status-fulfilled-ink); }
+.pill[data-value='Cancelled'] { background: var(--status-cancelled-bg); color: var(--status-cancelled-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}

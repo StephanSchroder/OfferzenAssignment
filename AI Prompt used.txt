@@ -1,0 +1,22 @@
+Create a backend C# service in the Backend folder using .NET 10. Use Entity Framework Core with a SQLite database for storage, and set the connection string in appsettings.json. Add a database startup extension class that makes sure the database exists on startup and runs migrations during startup.
+
+Create controller classes that inherit from ControllerBase, with CRUD operations as controller endpoints:
+
+Customer: get, add, update and delete. Deletes are soft deletes because customers must never be fully removed.
+Customer OData controller: get, with filtering and ordering.
+Purchase order: add, update and delete. Deletes archive the order because purchase orders must never be fully removed.
+Purchase order OData controller: get, with filtering and ordering.
+Product: manage products. Prices are decimal and always positive, enforced with Math.Abs.
+Product OData controller: get, with filtering and ordering.
+
+Add the following classes:
+
+PurchaseOrder: linked to a customer by foreign key (one customer has many purchase orders). Fields: Id (primary key), CustomerId (foreign key to the customer table), a client reference (unique), a Timestamp (DateTimeOffset, UTC), and Status (enum: Pending, Confirmed, Fulfilled, Cancelled).
+PurchaseOrderItem: foreign key to the purchase order, foreign key to the product, and a quantity that is always positive (uint). Store the price at the time of ordering on the item.
+Customer: keep it simple: Id (primary key), Name, Email.
+
+Create an Angular frontend (Angular 18+, TypeScript 5+, latest preferred) with a navbar for managing customers, purchase orders and products.
+
+Create a reusable data table component used by all three pages, which uses the OData endpoints for filtering. The table has Add and Update buttons in its header and a Delete button on each row. Adding and editing happen in a modal pop-up form.
+
+On the purchase orders page, clicking an order opens a modal showing the customer name, the items with their quantities and price at the time, and the order total, calculated in the backend.

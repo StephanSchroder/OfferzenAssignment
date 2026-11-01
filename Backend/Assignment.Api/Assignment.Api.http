@@ -1,0 +1,32 @@
+@host = http://localhost:5080
+
+### OData: customers whose name contains "an", ordered by name
+GET {{host}}/odata/Customers?$filter=contains(tolower(name),'an')&$orderby=name&$count=true
+
+### OData: products cheaper than 50, most expensive first
+GET {{host}}/odata/Products?$filter=price lt 50&$orderby=price desc
+
+### OData: active purchase orders, newest first
+GET {{host}}/odata/PurchaseOrders?$filter=isArchived eq false and status eq 'Pending'&$orderby=timestamp desc&$top=10&$count=true
+
+### Create a customer
+POST {{host}}/api/customers
+Content-Type: application/json
+
+{ "name": "Jane Doe", "email": "jane@example.com" }
+
+### Create a purchase order
+POST {{host}}/api/purchaseorders
+Content-Type: application/json
+
+{
+  "customerId": 1,
+  "clientReference": "PO-TEST-001",
+  "items": [ { "productId": 1, "quantity": 2 } ]
+}
+
+### Purchase order details (with backend-calculated total)
+GET {{host}}/api/purchaseorders/1
+
+### Archive a purchase order
+DELETE {{host}}/api/purchaseorders/1
